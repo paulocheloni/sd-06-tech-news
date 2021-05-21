@@ -23,7 +23,9 @@ def fetch(url):
 # Requisito 2
 def scrape_noticia(html_content):
     """Seu código deve vir aqui"""
+    # print("***************************")
     # print(html_content)
+    # print("***************************")
     s = Selector(text=html_content)
     url = s.css("head [rel='canonical'] ").css("link::attr(href)").get()
     title = s.css(".tec--article__header__title::text").get()
@@ -31,7 +33,7 @@ def scrape_noticia(html_content):
     writer = s.css(".tec--author__info__link::text").get()
     if not writer:
         writer = s.css("#js-author-bar > div > p:first-of-type::text").get()
-        #js-author-bar > div > p.z--m-none.z--truncate.z--font-bold
+        # #js-author-bar > div > p.z--m-none.z--truncate.z--font-bold
     if not writer:
         writer = s.css("div.tec--timestamp.tec--timestamp--lg > div.tec--timestamp__item.z--font-bold > a::text").get()
     if writer:
@@ -73,8 +75,6 @@ def scrape_noticia(html_content):
         "sources": sources,
         "categories": categories,
     }
-    # print(scraped_news)
-    # print("***************************")
 
     return scraped_news
 
@@ -116,18 +116,32 @@ def get_tech_news(amount):
 
     for page_iteration in range(0, pagination_limit):
         response = fetch(url)
-        print(url)
+        # print(url)
         url = scrape_next_page_link(response)
         pages.extend(scrape_novidades(response))
+
+    # print(pages)
+
+    iteration = 0
 
     for link in pages:
         response = fetch(link)
         individual_news = scrape_noticia(response)
+        # print("*"+ individual_news["writer"] + "*")
+        iteration += 1
+        # print("*************************")
+        # print("*************" + str(iteration) + "************")
+        # print("*************************")
         news.append(individual_news)
 
-    create_news(news)
+    result = news[0: amount]
+    create_news(result)
+    # create_news(news)
 
-    return news
+    return result
 
 
-# get_tech_news(50)
+# response = fetch("https://www.tecmundo.com.br/novidades")
+# print(response)
+# get_tech_news(30)
+# get_tech_news(response.text)
