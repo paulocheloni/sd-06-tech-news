@@ -1,6 +1,8 @@
 import requests
 import time
 from parsel import Selector
+import math
+from tech_news.database import create_news
 
 
 # Requisito 1
@@ -8,32 +10,45 @@ def fetch(url):
     """Seu código deve vir aqui"""
     try:
         time.sleep(1)
-        response = requests.get(url, timeout=1)
+        response = requests.get(url, timeout=3)
 
         if response.status_code != 200:
             return None
 
         return response.text
     except requests.ReadTimeout:
-        requests.ReadTimeout
+        return None
 
 
 # Requisito 2
 def scrape_noticia(html_content):
     """Seu código deve vir aqui"""
+    # print(html_content)
     s = Selector(text=html_content)
-    url = s.xpath('//link[@rel="amphtml"]').get().split('href="')[1]
-    url = url.split('">')[0]
-    url = url.replace("amp/", "")
+    url = s.css("head [rel='canonical'] ").css("link::attr(href)").get()
     title = s.css(".tec--article__header__title::text").get()
     timestamp = s.css("time").xpath("@datetime").get()
-    writer = s.css(".tec--author__info__link::text").get().strip()
-    shares_element = s.css(".tec--toolbar__item::text").getall()[0]
-    shares_count = shares_element.split(" ")[1].split(" ")[0]
-    shares_count = int(shares_count)
-    comments_element = s.css("#js-comments-btn::text").getall()[1]
-    comments_count = comments_element.split(" ")[1].split(" ")[0]
-    comments_count = int(comments_count)
+    writer = s.css(".tec--author__info__link::text").get()
+    if not writer:
+        writer = s.css("#js-author-bar > div > p:first-of-type::text").get()
+        #js-author-bar > div > p.z--m-none.z--truncate.z--font-bold
+    if not writer:
+        writer = s.css("div.tec--timestamp.tec--timestamp--lg > div.tec--timestamp__item.z--font-bold > a::text").get()
+    if writer:
+        writer = writer.strip()
+    shares_element = s.css(".tec--toolbar__item::text").getall()
+    shares_count = 0
+    if not shares_element:
+        shares_count = 0
+    else:
+        shares_count = shares_element[0].split(" ")[1].split(" ")[0]
+        shares_count = int(shares_count)
+    comments_element = s.css("#js-comments-btn::text").getall()
+    comments_count = 0
+    if comments_element:
+        comments_element = comments_element[1]
+        comments_count = comments_element.split(" ")[1].split(" ")[0]
+        comments_count = int(comments_count)
     summary_selector = "div.tec--article__body > p:nth-child(1) *::text"
     summary_content = s.css(summary_selector).getall()
     summary = "".join(summary_content)
@@ -58,6 +73,8 @@ def scrape_noticia(html_content):
         "sources": sources,
         "categories": categories,
     }
+    # print(scraped_news)
+    # print("***************************")
 
     return scraped_news
 
@@ -82,6 +99,7 @@ def scrape_next_page_link(html_content):
     """Seu código deve vir aqui"""
     s = Selector(text=html_content)
     next_page = s.css("div.tec--list.tec--list--lg > a::attr(href)").get()
+
     if not next_page:
         return None
 
@@ -91,3 +109,25 @@ def scrape_next_page_link(html_content):
 # Requisito 5
 def get_tech_news(amount):
     """Seu código deve vir aqui"""
+    pagination_limit = math.ceil(amount/20)
+    url = "https://www.tecmundo.com.br/novidades"
+    pages = []
+    news = []
+
+    for page_iteration in range(0, pagination_limit):
+        response = fetch(url)
+        print(url)
+        url = scrape_next_page_link(response)
+        pages.extend(scrape_novidades(response))
+
+    for link in pages:
+        response = fetch(link)
+        individual_news = scrape_noticia(response)
+        news.append(individual_news)
+
+    create_news(news)
+
+    return news
+
+
+# get_tech_news(50)
