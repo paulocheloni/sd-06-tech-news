@@ -21,8 +21,11 @@ def fetch(url):
         return None
 
 
-# head > link:nth-child(26)
-# Requisito 2
+# js-author-bar > div > p.z--m-none.z--truncate.z--font-bold > a
+# # head > link:nth-child(26)
+# # Requisito 2
+
+
 def scrape_noticia(html_content):
     """Seu código deve vir aqui"""
     selector = Selector(text=html_content)
@@ -31,11 +34,11 @@ def scrape_noticia(html_content):
         "title": selector.css("#js-article-title::text").get(),
         "timestamp": selector.css("#js-article-date::attr(datetime)").get(),
         "writer": selector.css(".tec--author__info__link::text").get().strip(),
-        "shares_count": selector.css(".tec--toolbar__item::text").re_first(
-            r"\d+"
+        "shares_count": int(
+            selector.css(".tec--toolbar__item::text").re_first(r"\d+")
         ),
-        "comments_count": selector.css("#js-comments-btn::text").re_first(
-            r"\d+"
+        "comments_count": int(
+            selector.css("#js-comments-btn::text").re_first(r"\d+")
         ),
         "summary": "".join(
             selector.css(
@@ -45,7 +48,14 @@ def scrape_noticia(html_content):
                 + " > p:nth-child(1) *::text"
             ).getall(),
         ),
-        "source": selector.css(".tec--badge::text").get().strip(),
+        "sources": [
+            element.strip()
+            for element in selector.css(
+                "#js-main > div.z--container > "
+                "article > div.tec--article__body-grid > "
+                "div.z--mb-16.z--px-16 > div > a::text"
+            ).getall()
+        ],
         "categories": [
             elemet.strip()
             for elemet in selector.css("#js-categories > a::text").getall()
@@ -61,6 +71,8 @@ def scrape_novidades(html_content):
 
 
 # Requisito 4
+
+
 def scrape_next_page_link(html_content):
     """Seu código deve vir aqui"""
 
@@ -72,6 +84,7 @@ def get_tech_news(amount):
 
 if __name__ == "__main__":
     url = "https://www.tecmundo.com.br/mobilidade-urbana-smart-cities/"
-    +"155000-musk-tesla-carros-totalmente-autonomos.htm"
+    "155000-musk-tesla-carros-totalmente-autonomos.htm"
+    # url = "https://www.tecmundo.com.br/novidades"
     html_content = fetch(url)
     print(scrape_noticia(html_content))
