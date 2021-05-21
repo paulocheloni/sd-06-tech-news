@@ -24,13 +24,24 @@ def scrape_noticia(html_content):
     url = selector.css("head link[rel=canonical]::attr(href)").get()
     title = selector.css("#js-article-title ::text").get()
     timestamp = selector.css("#js-article-date::attr(datetime)").get()
-    writer = selector.css("a.tec--author__info__link ::text").get().strip()
-    shares_count = int(selector.css(
+    writer = selector.css("a.tec--author__info__link ::text").get()
+    if writer is not None:
+        writer = writer.strip()
+        # writer = selector.css("p.z--m-none strong::text")
+
+    shares_count = selector.css(
         ".tec--toolbar__item::text"
-    ).get().split(' ')[1].strip())
-    comments_count = int(selector.css(
+    ).get()
+    if shares_count is None:
+        shares_count = 0
+    else:
+        shares_count = int(shares_count.split(' ')[1].strip())
+
+    comments_count = selector.css(
         "#js-comments-btn::attr(data-count)"
-    ).get())
+    ).get()
+    if comments_count is not None:
+        comments_count = int(comments_count)
     summary = selector.css(
         "div.tec--article__body p:nth-child(1) *::text").getall()
     all_summary = "".join(summary)
@@ -88,13 +99,15 @@ def get_tech_news(amount):
             next_news = scrape_noticia(next_page)
             # adiciona a prox noticia na lista page_news
             page_news.append(next_news)
-            if len(list_news) == amount:
+            if len(page_news) == amount:
                 create_news(page_news)
                 return page_news
         # se precisar ir para prox pag de novidades,
         # recebe a url da prox pagina
         url = scrape_next_page_link(response)
 
+# source .venv/bin/activate
+
 
 if __name__ == '__main__':
-    news = get_tech_news(21)
+    news = get_tech_news(40)
