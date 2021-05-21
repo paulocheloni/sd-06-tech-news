@@ -8,12 +8,13 @@ def search_by_title(title):
     )
     tuple_list = []
     for title_news in title_list_news:
-        tuple_list = (title_news["title"], title_news["url"])
+        tuple_list.append((title_news["title"], title_news["url"]))
     return tuple_list
 
 
 # Requisito 7
-# def search_by_date(date):
+def search_by_date(date):
+    """Seu código deve vir aqui"""
 #     news_by_date = search_news(
 #         {"date": {"$regex": date, "$options": "i"}}
 #     )
